@@ -6,14 +6,11 @@ import jakarta.validation.constraints.Size;
 
 public class UpdateUserRequest {
 
-    @NotBlank
     @Size(max = 50)
     private String name;
 
     private Integer age;
 
-    @NotBlank
-    @Email
     @Size(max = 254)
     private String email;
 
