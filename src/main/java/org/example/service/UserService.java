@@ -39,10 +39,8 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(@Valid CreateUserRequest request) {
-        String normalizedEmail = request.getEmail();
-        if (userRepository.existsUserByEmail(normalizedEmail)) {
-            throw new ConflictException("Email already in use");
-        }
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        mailValidAndUnique(normalizedEmail);
         User user = userMapper.fromCreate(request);
         userRepository.save(user);
         return userMapper.toResponse(user);
@@ -58,10 +56,8 @@ public class UserService {
     public UserResponse updateUser(Long id, @Valid UpdateUserRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
         if (request.getEmail() != null) {
-            String normalizedEmail = request.getEmail();
-            if (userRepository.existsUserByEmail(normalizedEmail)) {
-                throw new ConflictException("Email already in use");
-            }
+            String normalizedEmail = request.getEmail().trim().toLowerCase();
+            mailValidAndUnique(normalizedEmail);
             user.setEmail(normalizedEmail);
         }
         userMapper.applyUpdate(request, user);
@@ -88,15 +84,15 @@ public class UserService {
         String normalizedEmail = email.trim().toLowerCase();
         Set<ConstraintViolation<User>> v = validator.validateValue(User.class, "email", normalizedEmail);
         if (!v.isEmpty()) {
-            throw new IllegalArgumentException("Not valid email");
+            throw new ConflictException("Not valid email");
         }
     }
 
     public void mailValidAndUnique(String email) {
         String normalizedEmail = email.trim().toLowerCase();
         mailValid(normalizedEmail);
-        if (!userRepository.existsUserByEmail(normalizedEmail)) {
-            throw new IllegalArgumentException("User with " + email + " already created");
+        if (userRepository.existsUserByEmail(normalizedEmail)) {
+            throw new ConflictException("Email already in use");
         }
     }
 }
