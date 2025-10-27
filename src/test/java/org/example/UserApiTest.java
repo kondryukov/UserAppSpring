@@ -66,6 +66,28 @@ class UserApiTest {
     }
 
     @Test
+    void updateAllNull() throws Exception {
+        var createRequest = new CreateUserRequest("name", "name@mail.ru", 123);
+        MvcResult createResult = mvc.perform(post("/users/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().is(201))
+                .andReturn();
+
+        long id = objectMapper.readTree(createResult.getResponse().getContentAsString())
+                .get("id").asLong();
+
+        var request = new UpdateUserRequest(null, null, null);
+        System.out.println(id);
+        mvc.perform(put("/users/update/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                  .andExpect(status().is(200))
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.email").value("name@mail.ru"));
+    }
+
+    @Test
     void getListOfUsersTest() throws Exception {
         for (int i = 0; i < 10; i++) {
             var createRequest = new CreateUserRequest("name" + i, i + "name@mail.ru", i + 12);
