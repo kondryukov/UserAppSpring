@@ -30,7 +30,6 @@ public final class UserMapper {
 
     public void applyUpdate(UpdateUserRequest request, User user) {
         if (request.getName() != null) user.setName(request.getName());
-        if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getAge() != null) user.setAge(request.getAge());
     }
 }

@@ -1,16 +1,16 @@
 package org.example.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class UpdateUserRequest {
 
     @Size(max = 50)
-    private String name;
+    private final String name;
 
     private Integer age;
 
+    @Email
     @Size(max = 254)
     private String email;
 
@@ -21,7 +21,10 @@ public class UpdateUserRequest {
     }
 
     public String getEmail() {
-        return email;
+        if (email == null) {
+            return null;
+        }
+        return email.trim().isEmpty() ? null : email;
     }
 
     public Integer getAge() {

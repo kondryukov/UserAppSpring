@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,7 +23,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserController.class) // поднимет только веб-слой с этим контроллером
+@WebMvcTest(UserController.class)
 class UserControllerTest {
 
     @Autowired
@@ -34,10 +35,10 @@ class UserControllerTest {
 
     @Test
     void createReturns201AndLocationAndBody() throws Exception {
-        UserResponse resp = new UserResponse(
+        UserResponse response = new UserResponse(
                 1L, "name", "name@mail.ru", 123, new Date(), new Date()
         );
-        when(userService.createUser(ArgumentMatchers.any())).thenReturn(resp);
+        when(userService.createUser(ArgumentMatchers.any())).thenReturn(response);
 
         var request = new CreateUserRequest("name", "name@mail.ru", 123);
 
@@ -51,6 +52,20 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.email").value("name@mail.ru"));
     }
 
+    @Test
+    void createDataIntegrityException() throws Exception {
+        when(userService.createUser(ArgumentMatchers.any())).thenThrow(new DataIntegrityViolationException("DataIntegrityViolationException"));
+
+        var request = new CreateUserRequest("name", "name@mail.ru", 123);
+        mockMvc.perform(post("/users/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is(409))
+                .andExpect(jsonPath("$.detail").value("DataIntegrityViolationException"))
+                .andExpect(jsonPath("$.type").value("http://localhost:8080/users/error/conflict"));
+
+
+    }
 
     @Test
     void createInvalidRequestReturns400() throws Exception {

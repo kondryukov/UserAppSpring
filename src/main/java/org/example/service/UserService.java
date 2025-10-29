@@ -1,11 +1,6 @@
 package org.example.service;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Valid;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import jakarta.validation.*;
 import org.example.domain.User;
 import org.example.dto.CreateUserRequest;
 import org.example.dto.UpdateUserRequest;
@@ -20,14 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Component
 @Service
 public class UserService {
-
-    private static final Logger log = LogManager.getLogger(UserService.class);
-    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     private final UserMapper userMapper;
     private final UserRepository userRepository;
@@ -40,7 +31,7 @@ public class UserService {
     @Transactional
     public UserResponse createUser(@Valid CreateUserRequest request) {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
-        mailValidAndUnique(normalizedEmail);
+        mailUnique(normalizedEmail);
         User user = userMapper.fromCreate(request);
         userRepository.save(user);
         return userMapper.toResponse(user);
@@ -57,7 +48,7 @@ public class UserService {
         User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
         if (request.getEmail() != null) {
             String normalizedEmail = request.getEmail().trim().toLowerCase();
-            mailValidAndUnique(normalizedEmail);
+            mailUnique(normalizedEmail);
             user.setEmail(normalizedEmail);
         }
         userMapper.applyUpdate(request, user);
@@ -80,17 +71,8 @@ public class UserService {
         return userResponseList;
     }
 
-    public void mailValid(String email) {
+    public void mailUnique(String email) {
         String normalizedEmail = email.trim().toLowerCase();
-        Set<ConstraintViolation<User>> v = validator.validateValue(User.class, "email", normalizedEmail);
-        if (!v.isEmpty()) {
-            throw new ConflictException("Not valid email");
-        }
-    }
-
-    public void mailValidAndUnique(String email) {
-        String normalizedEmail = email.trim().toLowerCase();
-        mailValid(normalizedEmail);
         if (userRepository.existsUserByEmail(normalizedEmail)) {
             throw new ConflictException("Email already in use");
         }
